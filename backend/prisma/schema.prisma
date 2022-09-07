@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ngo {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  image     String?  @db.VarChar(500)
+  name      String   @unique @db.VarChar(255)
+  address   String   @db.VarChar(500)
+  city      String   @db.VarChar(500)
+  state     String   @db.VarChar(500)
+  events    Event[]
+  admins    User[]
+
+  @@map(name: "ngo")
+}
+
+model Event {
+  id         Int        @id @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  image      String?    @db.VarChar(500)
+  name       String     @db.VarChar(500)
+  targetFund Int
+  dueDate    DateTime   @db.Date
+  status     Status     @default(ON_TRACK)
+  ownedBy    Ngo        @relation(fields: [ngoId], references: [id])
+  ngoId      Int
+  donators   Donation[]
+
+  @@unique(fields: [name, ngoId], name: "unique_event_per_ngo")
+  @@map(name: "event")
+}
+
+enum Status {
+  COMPLETED
+  BEHIND
+  ON_TRACK
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  image     String?    @db.VarChar(500)
+  name      String     @db.VarChar(500)
+  email     String     @unique
+  isAdmin   Boolean    @default(false)
+  adminOf   Ngo?       @relation(fields: [ngoId], references: [id])
+  ngoId     Int?
+  donations Donation[]
+
+  @@map(name: "user")
+}
+
+//Boolean false means USER(DONATOR) and true means ADMIN 
+
+model Donation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  amount    Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+
+  @@map(name: "donation")
+}
